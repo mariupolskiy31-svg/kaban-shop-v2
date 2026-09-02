@@ -11,7 +11,7 @@ login_manager.login_view = 'admin_login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)  # <--- ИЗМЕНЕНО ЗДЕСЬ (было 120)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -68,17 +68,20 @@ def init_db(app):
     db.init_app(app)
     login_manager.init_app(app)
 
-    with app.app_context():
-        db.create_all()
-
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(username='admin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Админ создан: login=admin, password=admin123")
-
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    with app.app_context():
+        try:
+            db.create_all()
+
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(username='admin')
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Админ создан: login=admin, password=admin123")
+        except Exception as e:
+            print(f"Ошибка инициализации БД: {e}")

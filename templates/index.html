@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KABANSHOP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding-bottom: 80px;
+        }
+        .header {
+            background: #D32F2F;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left h1 { font-size: 28px; font-weight: bold; }
+        .header-left p { font-size: 12px; color: #cccccc; }
+        .cart-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            position: relative;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: white;
+            color: #D32F2F;
+            border-radius: 10px;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .filters {
+            background: #2a2a2a;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+        .filter-btn {
+            background: #D32F2F;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filter-btn.active { background: #B71C1C; }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: white;
+            font-size: 14px;
+        }
+        .sub-filters {
+            background: #333;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            border-top: 1px solid #444;
+        }
+        .sub-filter-select {
+            background: #444;
+            color: white;
+            border: 1px solid #555;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .category-section { margin: 20px 10px; }
+        .category-title {
+            background: #D32F2F;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .product {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+        .product-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #1a1a1a;
+        }
+        .product-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .product-sub {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .product-price {
+            color: #4CAF50;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .product-stock {
+            font-size: 14px;
+        }
+        .in-stock { color: #4CAF50; }
+        .out-of-stock { color: #F44336; }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-right: 5px;
+        }
+        .btn:hover { background: #45a049; }
+        .btn:disabled { background: #666; cursor: not-allowed; }
+        .btn-info { background: #2196F3; }
+        .btn-info:hover { background: #1976D2; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .modal-close {
+            background: #D32F2F;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .loading { text-align: center; padding: 40px; color: #888; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 2000;
+            display: none;
+        }
+        .toast.show { display: block; }
+        .color-list { margin: 10px 0; }
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .color-item:hover { background: #3a3a3a; }
+        .color-item.disabled { opacity: 0.4; cursor: not-allowed; }
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+        }
+        .cart-item {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-total {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            text-align: right;
+            margin-top: 15px;
+        }
+        .cart-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .cart-actions button {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-danger { background: #F44336; color: white; }
+        .btn-danger:hover { background: #D32F2F; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn-success:hover { background: #45a049; }
+        .btn-copy { background: #FF9800; color: white; }
+        .btn-copy:hover { background: #F57C00; }
+        .selected-color-badge {
+            display: inline-block;
+            background: #2196F3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .order-text {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 10px 0;
+            border: 1px solid #444;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>KABANSHOP</h1>
+            <p>Вейп-шоп</p>
+        </div>
+        <button class="cart-btn" onclick="showCart()">
+            🛒
+            <span class="cart-badge" id="cartBadge" style="display:none">0</span>
+        </button>
+    </div>
+
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterCategory('all')">Все</button>
+        <button class="filter-btn" onclick="filterCategory('liquids')">Жидкости</button>
+        <button class="filter-btn" onclick="filterCategory('pods')">Pod</button>
+        <button class="filter-btn" onclick="filterCategory('disposables')">Одноразки</button>
+        <button class="filter-btn" onclick="filterCategory('consumables')">Расходники</button>
+        <div class="checkbox-container">
+            <input type="checkbox" id="inStockOnly" checked onchange="loadCatalog()">
+            <label for="inStockOnly">Только в наличии</label>
+        </div>
+    </div>
+
+    <div class="sub-filters" id="liquidFilters" style="display:none">
+        <select class="sub-filter-select" id="brandFilter" onchange="renderCatalog()">
+            <option value="">Все бренды</option>
+        </select>
+        <select class="sub-filter-select" id="nicotineFilter" onchange="renderCatalog()">
+            <option value="">Весь никотин</option>
+        </select>
+    </div>
+
+    <div class="sub-filters" id="consumableFilters" style="display:none">
+        <select class="sub-filter-select" id="deviceFilter" onchange="renderCatalog()">
+            <option value="">Все устройства</option>
+        </select>
+    </div>
+
+    <div id="catalog">
+        <div class="loading">Загрузка каталога...</div>
+    </div>
+
+    <div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let catalog = {};
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let podSpecs = {};
+        let consumableSpecs = {};
+        let currentCategory = 'all';
+
+        let displayedItems = {
+            liquids: [],
+            pods: [],
+            disposables: [],
+            consumables: []
+        };
+
+        async function loadCatalog() {
+            try {
+                const response = await fetch('/api/catalog?t=' + Date.now());
+                const result = await response.json();
+
+                // Python возвращает данные напрямую, поэтому присваиваем result целиком
+                catalog = result;
+
+                populateFilters();
+                renderCatalog();
+            } catch (error) {
+                console.error('Ошибка:', error);
+                document.getElementById('catalog').innerHTML = '<div class="loading" style="color:red">Ошибка подключения к серверу. Проверьте консоль (F12).</div>';
+            }
+        }
+
+        function populateFilters() {
+            const brands = [...new Set(catalog.liquids.map(l => l.бренд).filter(b => b))];
+            const brandFilter = document.getElementById('brandFilter');
+            brandFilter.innerHTML = '<option value="">Все бренды</option>';
+            brands.forEach(brand => {
+                brandFilter.innerHTML += '<option value="' + brand + '">' + brand + '</option>';
+            });
+
+            const nicotines = [...new Set(catalog.liquids.map(l => l.никотин).filter(n => n))];
+            const nicotineFilter = document.getElementById('nicotineFilter');
+            nicotineFilter.innerHTML = '<option value="">Весь никотин</option>';
+            nicotines.forEach(n => {
+                nicotineFilter.innerHTML += '<option value="' + n + '">' + n + '</option>';
+            });
+
+            const compatibleDevices = [...new Set(catalog.consumables.map(c => c['на какие устройства']).filter(d => d))];
+            const deviceFilter = document.getElementById('deviceFilter');
+            deviceFilter.innerHTML = '<option value="">Все устройства</option>';
+            compatibleDevices.forEach(d => {
+                deviceFilter.innerHTML += '<option value="' + d + '">' + d + '</option>';
+            });
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog');
+            const inStockOnly = document.getElementById('inStockOnly').checked;
+
+            document.getElementById('liquidFilters').style.display = currentCategory === 'liquids' ? 'flex' : 'none';
+            document.getElementById('consumableFilters').style.display = currentCategory === 'consumables' ? 'flex' : 'none';
+
+            displayedItems = { liquids: [], pods: [], disposables: [], consumables: [] };
+
+            let html = '';
+
+            const categories = [
+                {key: 'liquids', title: '💨 ЖИДКОСТИ', render: renderLiquid},
+                {key: 'pods', title: '🔋 POD СИСТЕМЫ', render: renderPod},
+                {key: 'disposables', title: ' ОДНОРАЗКИ', render: renderDisposable},
+                {key: 'consumables', title: '⚙️ РАСХОДНИКИ', render: renderConsumable}
+            ];
+
+            categories.forEach(cat => {
+                if (currentCategory !== 'all' && currentCategory !== cat.key) return;
+
+                let items = catalog[cat.key] || [];
+
+                if (cat.key === 'liquids') {
+                    const brandFilter = document.getElementById('brandFilter').value;
+                    const nicotineFilter = document.getElementById('nicotineFilter').value;
+
+                    if (brandFilter) items = items.filter(item => item.бренд === brandFilter);
+                    if (nicotineFilter) items = items.filter(item => item.никотин === nicotineFilter);
+                }
+
+                if (cat.key === 'consumables') {
+                    const deviceFilter = document.getElementById('deviceFilter').value;
+                    if (deviceFilter) {
+                        items = items.filter(item => {
+                            const compatibleDevices = item['на какие устройства'] || '';
+                            return compatibleDevices.includes(deviceFilter);
+                        });
+                    }
+                }
+
+                const filtered = inStockOnly ? items.filter(item => {
+                    if (cat.key === 'pods') return item.общее_количество > 0;
+                    return item.количество > 0;
+                }) : items;
+
+                if (filtered.length === 0) return;
+
+                html += '<div class="category-section">';
+                html += '<div class="category-title">' + cat.title + ' (' + filtered.length + ')</div>';
+
+                filtered.forEach((item, idx) => {
+                    displayedItems[cat.key].push(item);
+                    html += cat.render(item, idx);
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html || '<div class="loading">Нет товаров в наличии</div>';
+        }
+
+        function renderLiquid(item, idx) {
+            const brand = item.бренд || '';
+            const flavor = item.вкус || 'Неизвестно';
+            const nicotine = item.никотин || '';
+            const price = item.цена || '0';
+            const quantity = item.количество || 0;
+            const inStock = quantity > 0;
+            const imageUrl = item.image_url || '';
+
+            let name = flavor;
+            if (brand) name = brand + ' - ' + flavor;
+
+            return '<div class="product">' +
+                (imageUrl ? '<img src="' + imageUrl + '" class="product-image" alt="' + name + '">' : '') +
+                '<div class="product-name">' + name + '</div>' +
+                (nicotine ? '<div class="product-sub">🧪 Никотин: ' + nicotine + '</div>' : '') +
+                '<div class="product-footer">' +
+                    '<div class="product-price">' + price + ' ₽</div>' +
+                    '<div class="product-stock ' + (inStock ? 'in-stock' : 'out-of-stock') + '">' +
+                        (inStock ? '✓ В наличии: ' + quantity + ' шт' : '✗ Нет в наличии') +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<button class="btn btn-info" onclick="showLiquidDetails(' + idx + ')">️ Подробнее</button>' +
+                    '<button class="btn" onclick="addToCartByIndex(\'liquids\', ' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function renderPod(item, idx) {
+            const device = item.устройство || '';
+            const totalQuantity = item.общее_количество || 0;
+            const price = item.цена || '0';
+            const inStock = totalQuantity > 0;
+            const colors = item.цвета || [];
+
+            const availableColors = colors.filter(c => c.количество > 0).length;
+
+            return '<div class="product">' +
+                '<div class="product-name">' + device + '</div>' +
+                '<div class="product-stock ' + (inStock ? 'in-stock' : 'out-of-stock') + '">' +
+                    (inStock ? '✓ В наличии: ' + availableColors + ' цветов (' + totalQuantity + ' шт)' : '✗ Нет в наличии') +
+                '</div>' +
+                '<div class="product-footer">' +
+                    '<div class="product-price">' + price + ' ₽</div>' +
+                '</div>' +
+                '<div>' +
+                    '<button class="btn btn-info" onclick="showPodDetails(' + idx + ')">🎨 Все цвета</button>' +
+                    '<button class="btn" onclick="selectPodColor(' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function renderDisposable(item, idx) {
+            const device = item.устройство || '';
+            const flavor = item.вкус || 'Неизвестно';
+            const puffs = item.тяги || '';
+            const price = item.цена || '0';
+            const quantity = item.количество || 0;
+            const inStock = quantity > 0;
+            const imageUrl = item.image_url || '';
+
+            let name = flavor;
+            if (device) name = device + ' - ' + flavor;
+            if (puffs) name += ' (' + puffs + ')';
+
+            return '<div class="product">' +
+                (imageUrl ? '<img src="' + imageUrl + '" class="product-image" alt="' + name + '">' : '') +
+                '<div class="product-name">' + name + '</div>' +
+                '<div class="product-footer">' +
+                    '<div class="product-price">' + price + ' ₽</div>' +
+                    '<div class="product-stock ' + (inStock ? 'in-stock' : 'out-of-stock') + '">' +
+                        (inStock ? '✓ В наличии: ' + quantity + ' шт' : '✗ Нет в наличии') +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<button class="btn btn-info" onclick="showDisposableDetails(' + idx + ')">ℹ️ Подробнее</button>' +
+                    '<button class="btn" onclick="addToCartByIndex(\'disposables\', ' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function renderConsumable(item, idx) {
+            const brand = item.бренд || '';
+            const device = item['на какие устройства'] || '';
+            const resistance = item.сопротивление || '';
+            const price = item.цена || '0';
+            const quantity = item.количество || 0;
+            const inStock = quantity > 0;
+            const imageUrl = item.image_url || '';
+
+            const name = brand + ' - ' + device + ' (' + resistance + 'Ω)';
+
+            return '<div class="product">' +
+                (imageUrl ? '<img src="' + imageUrl + '" class="product-image" alt="' + name + '">' : '') +
+                '<div class="product-name">' + name + '</div>' +
+                '<div class="product-sub" style="font-size:11px;color:#666">Совместимо: ' + device + '</div>' +
+                '<div class="product-footer">' +
+                    '<div class="product-price">' + price + ' ₽</div>' +
+                    '<div class="product-stock ' + (inStock ? 'in-stock' : 'out-of-stock') + '">' +
+                        (inStock ? '✓ В наличии: ' + quantity + ' шт' : '✗ Нет в наличии') +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<button class="btn btn-info" onclick="showConsumableDetails(' + idx + ')">️ Подробнее</button>' +
+                    '<button class="btn" onclick="addToCartByIndex(\'consumables\', ' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function getItem(category, idx) {
+            return displayedItems[category][idx];
+        }
+
+        function selectPodColor(idx) {
+            const item = getItem('pods', idx);
+            const device = item.устройство || '';
+            const colors = item.цвета || [];
+            const availableColors = colors.filter(c => c.количество > 0);
+
+            if (availableColors.length === 0) {
+                showToast('❌ Нет доступных цветов');
+                return;
+            }
+
+            if (availableColors.length === 1) {
+                addToCartWithColor(item, 'pods', availableColors[0].цвет);
+                return;
+            }
+
+            let colorsHtml = '';
+            availableColors.forEach(color => {
+                colorsHtml += '<div class="color-item" onclick="addToCartWithColor(getItem(\'pods\', ' + idx + '), \'pods\', \'' + color.цвет + '\')">' +
+                    '<div class="color-dot" style="background:#4CAF50"></div>' +
+                    '<div style="flex:1;font-weight:bold">' + color.цвет + '</div>' +
+                    '<div style="font-size:12px;color:#4CAF50">' + color.количество + ' шт</div>' +
+                '</div>';
+            });
+
+            const content = '<div class="modal-title">🎨 Выберите цвет: ' + device + '</div>' +
+                '<p style="color:#888;margin-bottom:15px">Доступно цветов: ' + availableColors.length + '</p>' +
+                '<div class="color-list">' + colorsHtml + '</div>' +
+                '<button class="modal-close" onclick="closeModal()">Отмена</button>';
+
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function addToCartWithColor(item, category, selectedColor) {
+            const cartItem = {
+                product: item,
+                category: category,
+                quantity: 1,
+                selectedColor: selectedColor
+            };
+
+            const existing = cart.find(i =>
+                JSON.stringify(i.product) === JSON.stringify(item) &&
+                i.category === category &&
+                i.selectedColor === selectedColor
+            );
+
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push(cartItem);
+            }
+
+            saveCart();
+            updateCartBadge();
+            closeModal();
+            showToast('✓ ' + (item.устройство || item.бренд || 'Товар') + ' (' + selectedColor + ') добавлен в корзину');
+        }
+
+        function addToCartByIndex(category, idx) {
+            const item = getItem(category, idx);
+            addToCart(item, category);
+        }
+
+        function addToCart(item, category) {
+            const cartItem = {
+                product: item,
+                category: category,
+                quantity: 1,
+                selectedColor: null
+            };
+
+            const existing = cart.find(i =>
+                JSON.stringify(i.product) === JSON.stringify(item) &&
+                i.category === category &&
+                i.selectedColor === null
+            );
+
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push(cartItem);
+            }
+
+            saveCart();
+            updateCartBadge();
+            showToast('✓ ' + (item.устройство || item.бренд || item.вкус || 'Товар') + ' добавлен в корзину');
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        function updateCartBadge() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const badge = document.getElementById('cartBadge');
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function generateOrderText() {
+            let text = '🛒 Заказ KABANSHOP:\n\n';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                const price = parseInt(item.product.цена || 0);
+                const itemTotal = price * item.quantity;
+                total += itemTotal;
+
+                let name = '';
+                if (item.category === 'liquids') {
+                    name = (item.product.бренд || '') + ' - ' + (item.product.вкус || '');
+                    if (item.product.никотин) name += ' (' + item.product.никотин + ')';
+                } else if (item.category === 'pods') {
+                    name = item.product.устройство || '';
+                    if (item.selectedColor) name += ' - ' + item.selectedColor;
+                } else if (item.category === 'disposables') {
+                    name = (item.product.устройство || '') + ' - ' + (item.product.вкус || '');
+                    if (item.product.тяги) name += ' (' + item.product.тяги + ')';
+                } else {
+                    name = (item.product.бренд || '') + ' - ' + (item.product['на какие устройства'] || '');
+                    if (item.product.сопротивление) name += ' (' + item.product.сопротивление + 'Ω)';
+                }
+
+                text += (index + 1) + '. ' + name + '\n';
+                text += '   ' + item.quantity + ' шт × ' + price + ' ₽ = ' + itemTotal + ' ₽\n\n';
+            });
+
+            text += '━━━━━━━━━━━━━━━━━━\n';
+            text += '💰 Итого: ' + total + ' ₽\n';
+            text += '📦 Товаров: ' + cart.reduce((sum, i) => sum + i.quantity, 0) + ' шт\n';
+
+            return text;
+        }
+
+        function copyOrder() {
+            const orderText = generateOrderText();
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(orderText).then(() => {
+                    showToast('✅ Заказ скопирован! Вставьте в сообщение');
+                }).catch(() => {
+                    fallbackCopy(orderText);
+                });
+            } else {
+                fallbackCopy(orderText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('✅ Заказ скопирован! Вставьте в сообщение');
+            } catch (err) {
+                showToast('❌ Не удалось скопировать');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showCart() {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+
+            if (cart.length === 0) {
+                content.innerHTML = '<div class="modal-title"> Корзина пуста</div>' +
+                    '<p>Добавьте товары из каталога</p>' +
+                    '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+            } else {
+                let html = '<div class="modal-title">🛒 Корзина (' + cart.reduce((sum, i) => sum + i.quantity, 0) + ' товаров)</div>';
+
+                let total = 0;
+                cart.forEach((item, index) => {
+                    const price = parseInt(item.product.цена || 0);
+                    const itemTotal = price * item.quantity;
+                    total += itemTotal;
+
+                    let name = '';
+                    let colorBadge = '';
+
+                    if (item.category === 'liquids') {
+                        name = (item.product.бренд || '') + ' - ' + (item.product.вкус || '');
+                    } else if (item.category === 'pods') {
+                        name = item.product.устройство || '';
+                        if (item.selectedColor) {
+                            colorBadge = '<span class="selected-color-badge">' + item.selectedColor + '</span>';
+                        }
+                    } else if (item.category === 'disposables') {
+                        name = (item.product.устройство || '') + ' - ' + (item.product.вкус || '');
+                    } else {
+                        name = (item.product.бренд || '') + ' - ' + (item.product['на какие устройства'] || '');
+                    }
+
+                    html += '<div class="cart-item">' +
+                        '<div style="flex:1">' +
+                            '<div style="font-weight:bold">' + name + ' ' + colorBadge + '</div>' +
+                            '<div style="font-size:12px;color:#cccccc">' + price + ' ₽ × ' + item.quantity + '</div>' +
+                        '</div>' +
+                        '<div style="font-size:16px;font-weight:bold;color:#4CAF50;margin:0 10px">' + itemTotal + ' ₽</div>' +
+                        '<button class="btn btn-danger" style="margin:0;padding:5px 10px" onclick="removeFromCart(' + index + ')">️</button>' +
+                    '</div>';
+                });
+
+                const orderText = generateOrderText();
+
+                html += '<div class="cart-total">Итого: ' + total + ' ₽</div>' +
+                    '<div class="order-text">' + orderText + '</div>' +
+                    '<div class="cart-actions">' +
+                        '<button class="btn-copy" onclick="copyOrder()">📋 Скопировать заказ</button>' +
+                        '<button class="btn-danger" onclick="clearCart()">Очистить</button>' +
+                    '</div>' +
+                    '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+
+                content.innerHTML = html;
+            }
+
+            modal.classList.add('active');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCart();
+            updateCartBadge();
+            showCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            saveCart();
+            updateCartBadge();
+            closeModal();
+            showToast('Корзина очищена');
+        }
+
+        function showLiquidDetails(idx) {
+            const item = getItem('liquids', idx);
+            const brand = item.бренд || '';
+            const flavor = item.вкус || '';
+            const nicotine = item.никотин || '';
+            const price = item.цена || '0';
+            const quantity = item.количество || 0;
+            const imageUrl = item.image_url || '';
+
+            const content = '<div class="modal-title">' + flavor + '</div>' +
+                (imageUrl ? '<img src="' + imageUrl + '" style="max-width:100%;border-radius:10px;margin-bottom:15px">' : '') +
+                '<p><strong>Производитель:</strong> ' + (brand || 'Н/Д') + '</p>' +
+                '<p><strong>Никотин:</strong> ' + (nicotine || 'Н/Д') + '</p>' +
+                '<p><strong>Цена:</strong> ' + price + ' ₽</p>' +
+                '<p><strong>В наличии:</strong> ' + quantity + ' шт</p>' +
+                '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function showPodDetails(idx) {
+            const item = getItem('pods', idx);
+            const device = item.устройство || '';
+            const colors = item.цвета || [];
+
+            let colorsHtml = '';
+            colors.forEach(color => {
+                const inStock = color.количество > 0;
+                colorsHtml += '<div class="color-item ' + (inStock ? '' : 'disabled') + '" ' +
+                    (inStock ? 'onclick="addToCartWithColor(getItem(\'pods\', ' + idx + '), \'pods\', \'' + color.цвет + '\')"' : '') + '>' +
+                    '<div class="color-dot" style="background:' + (inStock ? '#4CAF50' : '#F44336') + '"></div>' +
+                    '<div style="flex:1">' + color.цвет + '</div>' +
+                    '<div style="font-size:12px;color:' + (inStock ? '#4CAF50' : '#F44336') + '">' +
+                        (inStock ? color.количество + ' шт' : 'Нет в наличии') +
+                    '</div>' +
+                '</div>';
+            });
+
+            const content = '<div class="modal-title">' + device + '</div>' +
+                '<h3 style="margin:10px 0">Доступные цвета:</h3>' +
+                '<p style="color:#888;font-size:12px;margin-bottom:10px">Нажмите на цвет, чтобы добавить в корзину</p>' +
+                '<div class="color-list">' + colorsHtml + '</div>' +
+                '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function showDisposableDetails(idx) {
+            const item = getItem('disposables', idx);
+            const device = item.устройство || '';
+            const flavor = item.вкус || '';
+            const puffs = item.тяги || '';
+            const price = item.цена || '0';
+            const quantity = item.количество || 0;
+            const imageUrl = item.image_url || '';
+
+            const content = '<div class="modal-title">' + device + ' - ' + flavor + '</div>' +
+                (imageUrl ? '<img src="' + imageUrl + '" style="max-width:100%;border-radius:10px;margin-bottom:15px">' : '') +
+                '<p><strong>Устройство:</strong> ' + (device || 'Н/Д') + '</p>' +
+                '<p><strong>Количество тяг:</strong> ' + (puffs || 'Н/Д') + '</p>' +
+                '<p><strong>Цена:</strong> ' + price + ' ₽</p>' +
+                '<p><strong>В наличии:</strong> ' + quantity + ' шт</p>' +
+                '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function showConsumableDetails(idx) {
+            const item = getItem('consumables', idx);
+            const brand = item.бренд || '';
+            const device = item['на какие устройства'] || '';
+            const resistance = item.сопротивление || '';
+            const imageUrl = item.image_url || '';
+
+            const content = '<div class="modal-title">' + brand + '</div>' +
+                (imageUrl ? '<img src="' + imageUrl + '" style="max-width:100%;border-radius:10px;margin-bottom:15px">' : '') +
+                '<p><strong>Совместимость:</strong> ' + (device || 'Н/Д') + '</p>' +
+                '<p><strong>Сопротивление:</strong> ' + (resistance || 'Н/Д') + 'Ω</p>' +
+                '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
+
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function filterCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderCatalog();
+        }
+
+        loadCatalog();
+        updateCartBadge();
+    </script>
+</body>
+</html>

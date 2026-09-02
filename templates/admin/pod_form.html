@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% if pod %}Редактировать{% else %}Добавить{% endif %} POD</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; padding: 20px; }
+        .form-container { max-width: 600px; margin: 0 auto; background: #2a2a2a; padding: 30px; border-radius: 10px; }
+        h1 { color: #D32F2F; margin-bottom: 30px; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #cccccc; }
+        input { width: 100%; padding: 12px; border: 1px solid #444; border-radius: 5px; background: #333; color: white; font-size: 16px; }
+        input:focus { outline: none; border-color: #D32F2F; }
+        .buttons { display: flex; gap: 10px; margin-top: 30px; }
+        button, .cancel-btn { flex: 1; padding: 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; text-decoration: none; text-align: center; }
+        button { background: #4CAF50; color: white; }
+        .cancel-btn { background: #666; color: white; }
+        .current-image { margin: 20px 0; text-align: center; }
+        .current-image img { max-width: 200px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>🔋 {% if pod %}Редактировать{% else %}Добавить{% endif %} POD</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Устройство *</label>
+                <input type="text" name="device" list="device-list" value="{{ pod.device if pod else '' }}" placeholder="Начните вводить или выберите..." required>
+                <datalist id="device-list">
+                    {% for device in existing_devices %}
+                        <option value="{{ device }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            <div class="form-group">
+                <label>Цвет *</label>
+                <input type="text" name="color" value="{{ pod.color if pod else '' }}" placeholder="например: Чёрный" required>
+            </div>
+            <div class="form-group">
+                <label>Количество</label>
+                <input type="number" name="quantity" value="{{ pod.quantity if pod else 0 }}" min="0">
+            </div>
+            <div class="form-group">
+                <label>Цена (₽) *</label>
+                <input type="number" name="price" value="{{ pod.price if pod else '' }}" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Фото товара</label>
+                {% if pod and pod.image_url %}
+                <div class="current-image">
+                    <img src="{{ pod.image_url }}" alt="Текущее фото">
+                </div>
+                {% endif %}
+                <input type="file" name="image" accept="image/*">
+            </div>
+            <div class="buttons">
+                <button type="submit">💾 Сохранить</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="cancel-btn">Отмена</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

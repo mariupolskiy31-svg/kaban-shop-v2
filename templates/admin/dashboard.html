@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка - KABANSHOP</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        .header {
+            background: #D32F2F;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 28px; }
+        .logout-btn {
+            background: white;
+            color: #D32F2F;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .section h2 { color: #D32F2F; margin-bottom: 20px; font-size: 24px; }
+        .add-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .add-btn:hover { background: #45a049; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #333; color: white; }
+        tr:hover { background: #333; }
+        .actions a { margin-right: 10px; text-decoration: none; }
+        .edit { background: #2196F3; color: white; padding: 5px 10px; border-radius: 3px; }
+        .delete { background: #F44336; color: white; padding: 5px 10px; border-radius: 3px; }
+        .flash-messages { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+        .flash-message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .flash-error { background: #F44336; }
+        .stock-0 { color: #F44336; }
+        .stock-positive { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>KABANSHOP - Админка</h1>
+        <a href="{{ url_for('admin_logout') }}" class="logout-btn">Выйти</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="section">
+        <h2>💨 Жидкости ({{ liquids|length }})</h2>
+        <a href="{{ url_for('add_liquid') }}" class="add-btn">+ Добавить жидкость</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Бренд</th>
+                    <th>Вкус</th>
+                    <th>Никотин</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for liquid in liquids %}
+                <tr>
+                    <td>{{ liquid.brand }}</td>
+                    <td>{{ liquid.flavor }}</td>
+                    <td>{{ liquid.nicotine or '-' }}</td>
+                    <td class="{% if liquid.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ liquid.quantity }} шт</td>
+                    <td>{{ liquid.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_liquid', id=liquid.id) }}" class="edit">✏️</a>
+                        <a href="{{ url_for('delete_liquid', id=liquid.id) }}" class="delete" onclick="return confirm('Удалить?')">️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>🔋 POD системы ({{ pods|length }})</h2>
+        <a href="{{ url_for('add_pod') }}" class="add-btn">+ Добавить POD</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Устройство</th>
+                    <th>Цвет</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pod in pods %}
+                <tr>
+                    <td>{{ pod.device }}</td>
+                    <td>{{ pod.color }}</td>
+                    <td class="{% if pod.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ pod.quantity }} шт</td>
+                    <td>{{ pod.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_pod', id=pod.id) }}" class="edit">✏️</a>
+                        <a href="{{ url_for('delete_pod', id=pod.id) }}" class="delete" onclick="return confirm('Удалить?')">️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Одноразки ({{ disposables|length }})</h2>
+        <a href="{{ url_for('add_disposable') }}" class="add-btn">+ Добавить одноразку</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Устройство</th>
+                    <th>Вкус</th>
+                    <th>Тяги</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for disposable in disposables %}
+                <tr>
+                    <td>{{ disposable.device }}</td>
+                    <td>{{ disposable.flavor }}</td>
+                    <td>{{ disposable.puffs or '-' }}</td>
+                    <td class="{% if disposable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ disposable.quantity }} шт</td>
+                    <td>{{ disposable.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_disposable', id=disposable.id) }}" class="edit">✏️</a>
+                        <a href="{{ url_for('delete_disposable', id=disposable.id) }}" class="delete" onclick="return confirm('Удалить?')">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>⚙️ Расходники ({{ consumables|length }})</h2>
+        <a href="{{ url_for('add_consumable') }}" class="add-btn">+ Добавить расходник</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Бренд</th>
+                    <th>Устройства</th>
+                    <th>Тип</th>
+                    <th>Сопротивление</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for consumable in consumables %}
+                <tr>
+                    <td>{{ consumable.brand }}</td>
+                    <td>{{ consumable.compatible_devices }}</td>
+                    <td>{{ consumable.type }}</td>
+                    <td>{{ consumable.resistance }}</td>
+                    <td class="{% if consumable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ consumable.quantity }} шт</td>
+                    <td>{{ consumable.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_consumable', id=consumable.id) }}" class="edit">✏️</a>
+                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" class="delete" onclick="return confirm('Удалить?')">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

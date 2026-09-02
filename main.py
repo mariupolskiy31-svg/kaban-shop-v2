@@ -1,23 +1,56 @@
 import os
+import base64
+import requests
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-import cloudinary
-import cloudinary.uploader
 from database import db, init_db, User, Liquid, Pod, Disposable, Consumable
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key')
 
-cloudinary.config(
-    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-)
+# Настройка БД (поддержка и Vercel Postgres, и локальной SQLite)
+database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+if database_url:
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///kaban.db'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///kaban.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 init_db(app)
+
+
+# ===== ФУНКЦИЯ ЗАГРУЗКИ ФОТО НА IMGBB =====
+def upload_to_imgbb(file):
+    """Загрузка фото на ImgBB"""
+    api_key = os.environ.get('IMGBB_API_KEY')
+    if not api_key:
+        print("Ошибка: Не найден IMGBB_API_KEY в переменных окружения")
+        return None
+
+    try:
+        file_data = file.read()
+        encoded = base64.b64encode(file_data).decode('utf-8')
+
+        response = requests.post(
+            'https://api.imgbb.com/1/upload',
+            data={
+                'key': api_key,
+                'image': encoded
+            },
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success'):
+                return result['data']['url']
+    except Exception as e:
+        print(f"Ошибка загрузки на ImgBB: {e}")
+
+    return None
 
 
 # ===== ПУБЛИЧНЫЕ МАРШРУТЫ =====
@@ -131,10 +164,8 @@ def add_liquid():
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if not image_url:
                     flash('Ошибка загрузки фото', 'error')
 
         liquid = Liquid(
@@ -169,10 +200,10 @@ def edit_liquid(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    liquid.image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if image_url:
+                    liquid.image_url = image_url
+                else:
                     flash('Ошибка загрузки фото', 'error')
 
         db.session.commit()
@@ -203,10 +234,8 @@ def add_pod():
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if not image_url:
                     flash('Ошибка загрузки фото', 'error')
 
         pod = Pod(
@@ -239,10 +268,10 @@ def edit_pod(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    pod.image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if image_url:
+                    pod.image_url = image_url
+                else:
                     flash('Ошибка загрузки фото', 'error')
 
         db.session.commit()
@@ -273,10 +302,8 @@ def add_disposable():
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if not image_url:
                     flash('Ошибка загрузки фото', 'error')
 
         disposable = Disposable(
@@ -311,10 +338,10 @@ def edit_disposable(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    disposable.image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if image_url:
+                    disposable.image_url = image_url
+                else:
                     flash('Ошибка загрузки фото', 'error')
 
         db.session.commit()
@@ -345,10 +372,8 @@ def add_consumable():
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if not image_url:
                     flash('Ошибка загрузки фото', 'error')
 
         consumable = Consumable(
@@ -385,10 +410,10 @@ def edit_consumable(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                try:
-                    upload_result = cloudinary.uploader.upload(file)
-                    consumable.image_url = upload_result['secure_url']
-                except:
+                image_url = upload_to_imgbb(file)
+                if image_url:
+                    consumable.image_url = image_url
+                else:
                     flash('Ошибка загрузки фото', 'error')
 
         db.session.commit()

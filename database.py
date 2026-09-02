@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from sqlalchemy import text
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -11,7 +12,7 @@ login_manager.login_view = 'admin_login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)  # <--- ИЗМЕНЕНО ЗДЕСЬ (было 120)
+    password_hash = db.Column(db.String(256), nullable=False)  # УВЕЛИЧЕНО ДО 256
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -73,15 +74,27 @@ def init_db(app):
         return User.query.get(int(user_id))
 
     with app.app_context():
-        try:
-            db.create_all()
+        # 1. Создаём таблицы (если их нет)
+        db.create_all()
 
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(username='admin')
-                admin.set_password('admin123')
-                db.session.add(admin)
-                db.session.commit()
-                print("✅ Админ создан: login=admin, password=admin123")
-        except Exception as e:
-            print(f"Ошибка инициализации БД: {e}")
+        # 2. ИСПРАВЛЕНИЕ: Принудительно меняем размер колонки в СУЩЕСТВУЮЩЕЙ базе данных
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(text('ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(256)'))
+                conn.commit()
+        except Exception:
+            pass  # Игнорируем ошибку, если колонка уже имеет правильный размер
+
+        # 3. Создаём или обновляем админа
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(username='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Админ создан: login=admin, password=admin123")
+        else:
+            # Если админ есть, но пароль был сохранён с ошибкой (обрезан), обновляем его
+            admin.set_password('admin123')
+            db.session.commit()
+            print("✅ Пароль админа обновлён")

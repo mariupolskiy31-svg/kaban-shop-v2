@@ -2,7 +2,7 @@ import os
 import base64
 import requests
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
-from database import db, init_db, LiquidBrand, LiquidFlavor, Pod, Disposable, Consumable
+from database import db, init_db, LiquidBrand, LiquidFlavor, PodDevice, PodColor, Disposable, Consumable
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key')
@@ -70,7 +70,7 @@ def index():
 
 @app.route('/api/catalog')
 def api_catalog():
-    # Жидкости с группировкой по брендам
+    # Жидкости
     liquid_brands = LiquidBrand.query.all()
     liquids = []
     for lb in liquid_brands:
@@ -85,22 +85,26 @@ def api_catalog():
                 'image_url': lb.image_url
             })
 
-    # POD системы
-    pods = Pod.query.all()
+    # POD системы - группируем по устройствам
+    pod_devices = PodDevice.query.all()
     pods_data = {}
-    for pod in pods:
-        if pod.device not in pods_data:
-            pods_data[pod.device] = {
-                'устройство': pod.device,
+    for pd in pod_devices:
+        device_name = pd.device
+        if device_name not in pods_data:
+            pods_data[device_name] = {
+                'устройство': device_name,
                 'цвета': [],
                 'общее_количество': 0,
-                'цена': pod.price
+                'цена': 0
             }
-        pods_data[pod.device]['цвета'].append({
-            'цвет': pod.color,
-            'количество': pod.quantity
-        })
-        pods_data[pod.device]['общее_количество'] += pod.quantity
+        for color in pd.colors:
+            pods_data[device_name]['цвета'].append({
+                'цвет': color.color,
+                'количество': color.quantity
+            })
+            pods_data[device_name]['общее_количество'] += color.quantity
+            if color.price > 0:
+                pods_data[device_name]['цена'] = color.price
 
     # Одноразки и расходники
     disposables = Disposable.query.all()
@@ -140,7 +144,7 @@ def admin_dashboard():
     search = request.args.get('search', '')
     filter_type = request.args.get('filter_type', 'all')
 
-    # Жидкости - показываем бренды с количеством вкусов и общим наличием
+    # Жидкости
     if search:
         liquid_brands = LiquidBrand.query.filter(
             (LiquidBrand.brand.ilike(f'%{search}%')) |
@@ -149,16 +153,13 @@ def admin_dashboard():
     else:
         liquid_brands = LiquidBrand.query.all()
 
-    # PODs
+    # POD устройства
     if search and filter_type in ['all', 'pods']:
-        pods = Pod.query.filter(
-            (Pod.device.ilike(f'%{search}%')) |
-            (Pod.color.ilike(f'%{search}%'))
-        ).all()
+        pod_devices = PodDevice.query.filter(PodDevice.device.ilike(f'%{search}%')).all()
     elif filter_type == 'pods':
-        pods = Pod.query.all()
+        pod_devices = PodDevice.query.all()
     else:
-        pods = [] if filter_type != 'all' else Pod.query.all()
+        pod_devices = [] if filter_type != 'all' else PodDevice.query.all()
 
     # Одноразки
     if search and filter_type in ['all', 'disposables']:
@@ -182,13 +183,23 @@ def admin_dashboard():
     else:
         consumables = [] if filter_type != 'all' else Consumable.query.all()
 
+    # Подсчёт стоимости для каждого раздела
+    liquids_total = sum(lb.price * sum(f.quantity for f in lb.flavors) for lb in liquid_brands)
+    pods_total = sum(sum(c.price * c.quantity for c in pd.colors) for pd in pod_devices)
+    disposables_total = sum(d.price * d.quantity for d in disposables)
+    consumables_total = sum(c.price * c.quantity for c in consumables)
+
     return render_template('admin/dashboard.html',
                            liquid_brands=liquid_brands,
-                           pods=pods,
+                           pod_devices=pod_devices,
                            disposables=disposables,
                            consumables=consumables,
                            search=search,
-                           filter_type=filter_type)
+                           filter_type=filter_type,
+                           liquids_total=liquids_total,
+                           pods_total=pods_total,
+                           disposables_total=disposables_total,
+                           consumables_total=consumables_total)
 
 
 # ===== ЖИДКОСТИ: БРЕНД =====
@@ -300,10 +311,10 @@ def delete_liquid_flavor(id):
     return redirect(url_for('admin_dashboard'))
 
 
-# ===== POD СИСТЕМЫ =====
+# ===== POD: УСТРОЙСТВО =====
 
-@app.route('/admin/pod/add', methods=['GET', 'POST'])
-def add_pod():
+@app.route('/admin/pod-device/add', methods=['GET', 'POST'])
+def add_pod_device():
     if request.method == 'POST':
         image_url = None
         if 'image' in request.files:
@@ -313,51 +324,98 @@ def add_pod():
                 if not image_url:
                     flash('Ошибка загрузки фото', 'error')
 
-        pod = Pod(
+        device = PodDevice(
             device=request.form.get('device'),
-            color=request.form.get('color'),
-            quantity=int(request.form.get('quantity', 0)),
-            price=int(request.form.get('price')),
             image_url=image_url
         )
-        db.session.add(pod)
+        db.session.add(device)
         db.session.commit()
-        flash('POD добавлен', 'success')
+        flash('Устройство создано! Теперь добавь к нему цвета.', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('admin/pod_form.html', pod=None)
+    return render_template('admin/pod_device_form.html', device=None)
 
 
-@app.route('/admin/pod/edit/<int:id>', methods=['GET', 'POST'])
-def edit_pod(id):
-    pod = Pod.query.get_or_404(id)
+@app.route('/admin/pod-device/edit/<int:id>', methods=['GET', 'POST'])
+def edit_pod_device(id):
+    device = PodDevice.query.get_or_404(id)
 
     if request.method == 'POST':
-        pod.device = request.form.get('device')
-        pod.color = request.form.get('color')
-        pod.quantity = int(request.form.get('quantity', 0))
-        pod.price = int(request.form.get('price'))
+        device.device = request.form.get('device')
 
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
                 image_url = upload_to_imgbb(file)
                 if image_url:
-                    pod.image_url = image_url
+                    device.image_url = image_url
 
         db.session.commit()
-        flash('POD обновлён', 'success')
+        flash('Устройство обновлено', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('admin/pod_form.html', pod=pod)
+    return render_template('admin/pod_device_form.html', device=device)
 
 
-@app.route('/admin/pod/delete/<int:id>')
-def delete_pod(id):
-    pod = Pod.query.get_or_404(id)
-    db.session.delete(pod)
+@app.route('/admin/pod-device/delete/<int:id>')
+def delete_pod_device(id):
+    device = PodDevice.query.get_or_404(id)
+    db.session.delete(device)
     db.session.commit()
-    flash('POD удалён', 'success')
+    flash('Устройство и все цвета удалены', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# ===== POD: ЦВЕТА =====
+
+@app.route('/admin/pod-color/add/<int:device_id>', methods=['GET', 'POST'])
+def add_pod_color(device_id):
+    device = PodDevice.query.get_or_404(device_id)
+
+    if request.method == 'POST':
+        color_name = request.form.get('color', '').strip()
+        quantity = int(request.form.get('quantity', 0))
+        price = int(request.form.get('price', 0))
+
+        if color_name:
+            color = PodColor(
+                pod_device_id=device.id,
+                color=color_name,
+                quantity=quantity,
+                price=price
+            )
+            db.session.add(color)
+            db.session.commit()
+            flash(f'Цвет "{color_name}" добавлен!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Введите название цвета', 'error')
+
+    return render_template('admin/pod_color_form.html', device=device)
+
+
+@app.route('/admin/pod-color/edit/<int:id>', methods=['GET', 'POST'])
+def edit_pod_color(id):
+    color = PodColor.query.get_or_404(id)
+    device = color.pod_device
+
+    if request.method == 'POST':
+        color.color = request.form.get('color', '').strip()
+        color.quantity = int(request.form.get('quantity', 0))
+        color.price = int(request.form.get('price', 0))
+        db.session.commit()
+        flash('Цвет обновлён', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template('admin/pod_color_edit_form.html', color=color, device=device)
+
+
+@app.route('/admin/pod-color/delete/<int:id>')
+def delete_pod_color(id):
+    color = PodColor.query.get_or_404(id)
+    db.session.delete(color)
+    db.session.commit()
+    flash('Цвет удалён', 'success')
     return redirect(url_for('admin_dashboard'))
 
 

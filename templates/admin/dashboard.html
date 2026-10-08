@@ -31,10 +31,24 @@
         .brand-price { color: #4CAF50; margin-left: 10px; }
         .brand-actions a { margin-left: 10px; text-decoration: none; }
         .flavor-list { margin: 10px 0; }
-        .flavor-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #3a3a3a; }
+        .flavor-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #3a3a3a; flex-wrap: wrap; gap: 10px; }
+        .flavor-item:last-child { border-bottom: none; }
+        .flavor-name { flex: 1; min-width: 150px; }
+        .flavor-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .qty-form { display: flex; align-items: center; gap: 5px; }
+        .qty-input { width: 70px; padding: 5px 8px; border: 1px solid #444; border-radius: 4px; background: #1a1a1a; color: white; font-size: 13px; text-align: center; }
+        .qty-input:focus { outline: none; border-color: #2196F3; }
+        .qty-btn { padding: 5px 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .qty-btn:hover { background: #1976D2; }
+        .qty-btn.delete { background: #F44336; }
+        .qty-btn.delete:hover { background: #D32F2F; }
+        .qty-btn.edit { background: #FFC107; color: #000; }
+        .qty-btn.edit:hover { background: #FFA000; }
         .flash-messages { position: fixed; top: 20px; right: 20px; z-index: 1000; }
         .flash-message { background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; margin-bottom: 10px; }
         .flash-error { background: #F44336; }
+        .total-badge { background: #4CAF50; color: white; padding: 4px 10px; border-radius: 12px; font-size: 14px; font-weight: bold; }
+        .empty-msg { color: #888; font-style: italic; }
     </style>
 </head>
 <body>
@@ -55,7 +69,7 @@
 
     <!-- ПОИСК И ФИЛЬТРАЦИЯ -->
     <form class="search-bar" method="GET" action="/admin">
-        <input type="text" name="search" placeholder=" Поиск..." value="{{ search }}" style="flex: 1; min-width: 200px;">
+        <input type="text" name="search" placeholder="🔍 Поиск..." value="{{ search }}" style="flex: 1; min-width: 200px;">
         <select name="filter_type">
             <option value="all" {% if filter_type == 'all' %}selected{% endif %}>Все категории</option>
             <option value="liquids" {% if filter_type == 'liquids' %}selected{% endif %}>Жидкости</option>
@@ -73,8 +87,8 @@
     {% if filter_type == 'all' or filter_type == 'liquids' %}
     <div class="section">
         <h2>
-            💨 Жидкости ({{ liquid_brands|length }})
-            <a href="{{ url_for('add_liquid_brand') }}" class="add-btn">+ Добавить бренд и вкусы</a>
+            <span>💨 Жидкости ({{ liquid_brands|length }}) <span class="total-badge">{{ liquids_total }} ₽</span></span>
+            <a href="{{ url_for('add_liquid_brand') }}" class="add-btn">+ Добавить бренд</a>
         </h2>
         {% if liquid_brands %}
             {% for brand in liquid_brands %}
@@ -87,7 +101,7 @@
                     </div>
                     <div class="brand-actions">
                         <a href="{{ url_for('add_liquid_flavor', brand_id=brand.id) }}" style="color: #2196F3;">+ Вкус</a>
-                        <a href="{{ url_for('edit_liquid_brand', id=brand.id) }}" style="color: #FFC107;">✏️</a>
+                        <a href="{{ url_for('edit_liquid_brand', id=brand.id) }}" style="color: #FFC107;">✏️ Бренд</a>
                         <a href="{{ url_for('delete_liquid_brand', id=brand.id) }}" style="color: #F44336;" onclick="return confirm('Удалить бренд и ВСЕ его вкусы?')">🗑️</a>
                     </div>
                 </div>
@@ -95,18 +109,27 @@
                 <div class="flavor-list">
                     {% for flavor in brand.flavors %}
                     <div class="flavor-item">
-                        <span>{{ flavor.flavor }}</span>
-                        <div>
-                            <span class="{% if flavor.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ flavor.quantity }} шт</span>
-                            <a href="{{ url_for('delete_liquid_flavor', id=flavor.id) }}" style="color: #F44336; margin-left: 10px; text-decoration: none; font-size: 12px;" onclick="return confirm('Удалить этот вкус?')">✕</a>
+                        <span class="flavor-name">{{ flavor.flavor }}</span>
+                        <div class="flavor-controls">
+                            <!-- Inline редактирование количества -->
+                            <form method="POST" action="{{ url_for('edit_liquid_flavor', id=flavor.id) }}" class="qty-form" style="display: flex; gap: 5px; align-items: center;">
+                                <input type="hidden" name="flavor" value="{{ flavor.flavor }}">
+                                <input type="number" name="quantity" value="{{ flavor.quantity }}" min="0" class="qty-input" title="Количество">
+                                <button type="submit" class="qty-btn" title="Сохранить количество">💾</button>
+                            </form>
+                            <a href="{{ url_for('edit_liquid_flavor', id=flavor.id) }}" class="qty-btn edit" title="Редактировать название и количество">✏️</a>
+                            <a href="{{ url_for('delete_liquid_flavor', id=flavor.id) }}" class="qty-btn delete" title="Удалить вкус" onclick="return confirm('Удалить этот вкус?')">✕</a>
                         </div>
                     </div>
                     {% endfor %}
+                    {% if not brand.flavors %}
+                        <p class="empty-msg">Нет вкусов. Нажми "+ Вкус" чтобы добавить.</p>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #888;">Жидкости не найдены. Добавь первый бренд!</p>
+            <p class="empty-msg">Жидкости не найдены. Добавь первый бренд!</p>
         {% endif %}
     </div>
     {% endif %}
@@ -115,37 +138,51 @@
     {% if filter_type == 'all' or filter_type == 'pods' %}
     <div class="section">
         <h2>
-            🔋 POD системы ({{ pods|length }})
-            <a href="{{ url_for('add_pod') }}" class="add-btn">+ Добавить</a>
+            <span>🔋 POD системы ({{ pod_devices|length }}) <span class="total-badge">{{ pods_total }} ₽</span></span>
+            <a href="{{ url_for('add_pod_device') }}" class="add-btn">+ Добавить устройство</a>
         </h2>
-        {% if pods %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Устройство</th>
-                    <th>Цвет</th>
-                    <th>Наличие</th>
-                    <th>Цена</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pod in pods %}
-                <tr>
-                    <td>{{ pod.device }}</td>
-                    <td>{{ pod.color }}</td>
-                    <td class="{% if pod.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ pod.quantity }} шт</td>
-                    <td>{{ pod.price }} ₽</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_pod', id=pod.id) }}">✏️</a>
-                        <a href="{{ url_for('delete_pod', id=pod.id) }}" onclick="return confirm('Удалить?')">🗑️</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if pod_devices %}
+            {% for device in pod_devices %}
+            <div class="brand-block">
+                <div class="brand-header">
+                    <div>
+                        <span class="brand-name">{{ device.device }}</span>
+                        <span class="brand-price">{{ device.colors|sum(attribute='price') if device.colors else 0 }} ₽</span>
+                        <span class="brand-meta">({{ device.colors|sum(attribute='quantity') if device.colors else 0 }} шт всего)</span>
+                    </div>
+                    <div class="brand-actions">
+                        <a href="{{ url_for('add_pod_color', device_id=device.id) }}" style="color: #2196F3;">+ Цвет</a>
+                        <a href="{{ url_for('edit_pod_device', id=device.id) }}" style="color: #FFC107;">✏️ Устройство</a>
+                        <a href="{{ url_for('delete_pod_device', id=device.id) }}" style="color: #F44336;" onclick="return confirm('Удалить устройство и ВСЕ его цвета?')">🗑️</a>
+                    </div>
+                </div>
+
+                <div class="flavor-list">
+                    {% for color in device.colors %}
+                    <div class="flavor-item">
+                        <span class="flavor-name">{{ color.color }}</span>
+                        <div class="flavor-controls">
+                            <!-- Inline редактирование количества и цены -->
+                            <form method="POST" action="{{ url_for('edit_pod_color', id=color.id) }}" class="qty-form" style="display: flex; gap: 5px; align-items: center;">
+                                <input type="hidden" name="color" value="{{ color.color }}">
+                                <input type="number" name="quantity" value="{{ color.quantity }}" min="0" class="qty-input" title="Количество" style="width: 60px;">
+                                <span style="color: #888;">×</span>
+                                <input type="number" name="price" value="{{ color.price }}" min="0" class="qty-input" title="Цена" style="width: 70px;">
+                                <button type="submit" class="qty-btn" title="Сохранить">💾</button>
+                            </form>
+                            <a href="{{ url_for('edit_pod_color', id=color.id) }}" class="qty-btn edit" title="Полное редактирование">✏️</a>
+                            <a href="{{ url_for('delete_pod_color', id=color.id) }}" class="qty-btn delete" title="Удалить цвет" onclick="return confirm('Удалить этот цвет?')">✕</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not device.colors %}
+                        <p class="empty-msg">Нет цветов. Нажми "+ Цвет" чтобы добавить.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
         {% else %}
-            <p style="color: #888;">POD системы не найдены.</p>
+            <p class="empty-msg">POD системы не найдены. Добавь первое устройство!</p>
         {% endif %}
     </div>
     {% endif %}
@@ -154,7 +191,7 @@
     {% if filter_type == 'all' or filter_type == 'disposables' %}
     <div class="section">
         <h2>
-            🎯 Одноразки ({{ disposables|length }})
+            <span>🎯 Одноразки ({{ disposables|length }}) <span class="total-badge">{{ disposables_total }} ₽</span></span>
             <a href="{{ url_for('add_disposable') }}" class="add-btn">+ Добавить</a>
         </h2>
         {% if disposables %}
@@ -175,7 +212,16 @@
                     <td>{{ disposable.device }}</td>
                     <td>{{ disposable.flavor }}</td>
                     <td>{{ disposable.puffs or '-' }}</td>
-                    <td class="{% if disposable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ disposable.quantity }} шт</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('edit_disposable', id=disposable.id) }}" style="display: flex; gap: 5px; align-items: center;">
+                            <input type="hidden" name="device" value="{{ disposable.device }}">
+                            <input type="hidden" name="flavor" value="{{ disposable.flavor }}">
+                            <input type="hidden" name="puffs" value="{{ disposable.puffs or '' }}">
+                            <input type="hidden" name="price" value="{{ disposable.price }}">
+                            <input type="number" name="quantity" value="{{ disposable.quantity }}" min="0" class="qty-input">
+                            <button type="submit" class="qty-btn" title="Сохранить количество">💾</button>
+                        </form>
+                    </td>
                     <td>{{ disposable.price }} ₽</td>
                     <td class="actions">
                         <a href="{{ url_for('edit_disposable', id=disposable.id) }}">✏️</a>
@@ -186,7 +232,7 @@
             </tbody>
         </table>
         {% else %}
-            <p style="color: #888;">Одноразки не найдены.</p>
+            <p class="empty-msg">Одноразки не найдены.</p>
         {% endif %}
     </div>
     {% endif %}
@@ -195,7 +241,7 @@
     {% if filter_type == 'all' or filter_type == 'consumables' %}
     <div class="section">
         <h2>
-            ⚙️ Расходники ({{ consumables|length }})
+            <span>️ Расходники ({{ consumables|length }}) <span class="total-badge">{{ consumables_total }} ₽</span></span>
             <a href="{{ url_for('add_consumable') }}" class="add-btn">+ Добавить</a>
         </h2>
         {% if consumables %}
@@ -218,23 +264,34 @@
                     <td>{{ consumable.compatible_devices }}</td>
                     <td>{{ consumable.type }}</td>
                     <td>{{ consumable.resistance }}</td>
-                    <td class="{% if consumable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ consumable.quantity }} шт</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('edit_consumable', id=consumable.id) }}" style="display: flex; gap: 5px; align-items: center;">
+                            <input type="hidden" name="brand" value="{{ consumable.brand }}">
+                            <input type="hidden" name="compatible_devices" value="{{ consumable.compatible_devices }}">
+                            <input type="hidden" name="type" value="{{ consumable.type }}">
+                            <input type="hidden" name="resistance" value="{{ consumable.resistance }}">
+                            <input type="hidden" name="price" value="{{ consumable.price }}">
+                            <input type="number" name="quantity" value="{{ consumable.quantity }}" min="0" class="qty-input">
+                            <button type="submit" class="qty-btn" title="Сохранить количество">💾</button>
+                        </form>
+                    </td>
                     <td>{{ consumable.price }} ₽</td>
                     <td class="actions">
                         <a href="{{ url_for('edit_consumable', id=consumable.id) }}">✏️</a>
-                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" onclick="return confirm('Удалить?')">🗑️</a>
+                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" onclick="return confirm('Удалить?')">️</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-            <p style="color: #888;">Расходники не найдены.</p>
+            <p class="empty-msg">Расходники не найдены.</p>
         {% endif %}
     </div>
     {% endif %}
 
     <script>
+        // Авто-скрытие уведомлений через 3 секунды
         setTimeout(() => {
             document.querySelectorAll('.flash-message').forEach(el => {
                 el.style.opacity = '0';

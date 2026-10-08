@@ -25,13 +25,23 @@ class LiquidFlavor(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-class Pod(db.Model):
+class PodDevice(db.Model):
+    """Устройство POD (группа)"""
     id = db.Column(db.Integer, primary_key=True)
     device = db.Column(db.String(100), nullable=False)
+    image_url = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    colors = db.relationship('PodColor', backref='pod_device', lazy=True, cascade='all, delete-orphan')
+
+
+class PodColor(db.Model):
+    """Цвет POD"""
+    id = db.Column(db.Integer, primary_key=True)
+    pod_device_id = db.Column(db.Integer, db.ForeignKey('pod_device.id'), nullable=False)
     color = db.Column(db.String(50), nullable=False)
     quantity = db.Column(db.Integer, default=0)
     price = db.Column(db.Integer, nullable=False)
-    image_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

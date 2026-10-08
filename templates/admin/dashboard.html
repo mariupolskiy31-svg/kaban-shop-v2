@@ -120,7 +120,7 @@
                     <div class="brand-actions">
                         <a href="{{ url_for('add_liquid_flavor', brand_id=brand.id) }}" style="color: #2196F3;">+ Вкус</a>
                         <a href="{{ url_for('edit_liquid_brand', id=brand.id) }}" style="color: #FFC107;">✏️ Бренд</a>
-                        <a href="{{ url_for('delete_liquid_brand', id=brand.id) }}" style="color: #F44336;" onclick="return confirm('Удалить бренд и ВСЕ его вкусы?')">🗑️</a>
+                        <a href="{{ url_for('delete_liquid_brand', id=brand.id) }}" style="color: #F44336;" onclick="return confirm('Удалить бренд и ВСЕ его вкусы?')">🗑️ Удалить</a>
                     </div>
                 </div>
 
@@ -170,7 +170,8 @@
                     <div class="brand-actions">
                         <a href="{{ url_for('add_pod_color', device_id=device.id) }}" style="color: #2196F3;">+ Цвет</a>
                         <a href="{{ url_for('edit_pod_device', id=device.id) }}" style="color: #FFC107;">✏️ Устройство</a>
-                        <a href="{{ url_for('delete_pod_device', id=device.id) }}" style="color: #F44336;" onclick="return confirm('Удалить устройство и ВСЕ его цвета?')">️</a>
+                        <!-- ИЗМЕНЕНИЕ ЗДЕСЬ: Кнопка удаления сделана заметной -->
+                        <a href="{{ url_for('delete_pod_device', id=device.id) }}" onclick="return confirm('Удалить устройство «{{ device.device }}» и ВСЕ его цвета?')" style="background: #F44336; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 13px; display: inline-block;">🗑️ Удалить</a>
                     </div>
                 </div>
 
@@ -207,7 +208,7 @@
     {% if filter_type == 'all' or filter_type == 'disposables' %}
     <div class="section">
         <h2>
-            <span> Одноразки ({{ disposables|length }}) <span class="total-badge">{{ disposables_total }} ₽</span></span>
+            <span>🎯 Одноразки ({{ disposables|length }}) <span class="total-badge">{{ disposables_total }} ₽</span></span>
             <a href="{{ url_for('add_disposable') }}" class="add-btn">+ Добавить</a>
         </h2>
         {% if disposables %}
@@ -257,7 +258,7 @@
     {% if filter_type == 'all' or filter_type == 'consumables' %}
     <div class="section">
         <h2>
-            <span>️ Расходники ({{ consumables|length }}) <span class="total-badge">{{ consumables_total }} ₽</span></span>
+            <span>⚙️ Расходники ({{ consumables|length }}) <span class="total-badge">{{ consumables_total }} ₽</span></span>
             <a href="{{ url_for('add_consumable') }}" class="add-btn">+ Добавить</a>
         </h2>
         {% if consumables %}

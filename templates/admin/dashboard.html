@@ -9,19 +9,28 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a1a; color: white; padding: 20px; }
         .header { background: #D32F2F; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { font-size: 24px; }
+        .header a { color: white; text-decoration: none; }
         .search-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .search-bar input, .search-bar select { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; font-size: 14px; }
         .search-bar button { padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .search-bar a { padding: 10px 15px; background: #666; color: white; border-radius: 5px; text-decoration: none; }
         .section { background: #2a2a2a; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .section h2 { color: #D32F2F; margin-bottom: 15px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .section h2 { color: #D32F2F; margin-bottom: 15px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .add-btn { background: #4CAF50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px; }
+        .add-btn:hover { background: #45a049; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; font-size: 14px; }
         th { background: #333; color: #ccc; }
         .actions a { margin-right: 8px; text-decoration: none; font-size: 16px; }
         .stock-0 { color: #F44336; }
         .stock-positive { color: #4CAF50; }
-        .flavor-list { margin: 10px 0; padding-left: 20px; }
+        .brand-block { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .brand-name { font-size: 16px; color: #fff; font-weight: bold; }
+        .brand-meta { color: #aaa; margin-left: 10px; }
+        .brand-price { color: #4CAF50; margin-left: 10px; }
+        .brand-actions a { margin-left: 10px; text-decoration: none; }
+        .flavor-list { margin: 10px 0; }
         .flavor-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #3a3a3a; }
         .flash-messages { position: fixed; top: 20px; right: 20px; z-index: 1000; }
         .flash-message { background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; margin-bottom: 10px; }
@@ -31,7 +40,7 @@
 <body>
     <div class="header">
         <h1>KABANSHOP - Управление</h1>
-        <a href="/" style="color: white; text-decoration: none;">🌐 На сайт</a>
+        <a href="/">🌐 На сайт</a>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -46,7 +55,7 @@
 
     <!-- ПОИСК И ФИЛЬТРАЦИЯ -->
     <form class="search-bar" method="GET" action="/admin">
-        <input type="text" name="search" placeholder="🔍 Поиск..." value="{{ search }}" style="flex: 1; min-width: 200px;">
+        <input type="text" name="search" placeholder=" Поиск..." value="{{ search }}" style="flex: 1; min-width: 200px;">
         <select name="filter_type">
             <option value="all" {% if filter_type == 'all' %}selected{% endif %}>Все категории</option>
             <option value="liquids" {% if filter_type == 'liquids' %}selected{% endif %}>Жидкости</option>
@@ -56,29 +65,30 @@
         </select>
         <button type="submit">Найти</button>
         {% if search or filter_type != 'all' %}
-            <a href="/admin" style="padding: 10px; background: #666; color: white; border-radius: 5px; text-decoration: none;">Сбросить</a>
+            <a href="/admin">Сбросить</a>
         {% endif %}
     </form>
 
     <!-- ЖИДКОСТИ -->
     {% if filter_type == 'all' or filter_type == 'liquids' %}
     <div class="section">
-        <h2>💨 Жидкости
+        <h2>
+            💨 Жидкости ({{ liquid_brands|length }})
             <a href="{{ url_for('add_liquid_brand') }}" class="add-btn">+ Добавить бренд и вкусы</a>
         </h2>
         {% if liquid_brands %}
             {% for brand in liquid_brands %}
-            <div style="background: #333; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="brand-block">
+                <div class="brand-header">
                     <div>
-                        <strong style="font-size: 16px; color: #fff;">{{ brand.brand }}</strong>
-                        <span style="color: #aaa; margin-left: 10px;">{{ brand.nicotine or 'Б/Н' }}</span>
-                        <span style="color: #4CAF50; margin-left: 10px;">{{ brand.price }} ₽</a>
+                        <span class="brand-name">{{ brand.brand }}</span>
+                        <span class="brand-meta">{{ brand.nicotine or 'Б/Н' }}</span>
+                        <span class="brand-price">{{ brand.price }} ₽</span>
                     </div>
-                    <div>
-                        <a href="{{ url_for('add_liquid_flavor', brand_id=brand.id) }}" style="color: #2196F3; margin-right: 10px; text-decoration: none;">+ Вкус</a>
-                        <a href="{{ url_for('edit_liquid_brand', id=brand.id) }}" style="color: #FFC107; margin-right: 10px; text-decoration: none;">✏️</a>
-                        <a href="{{ url_for('delete_liquid_brand', id=brand.id) }}" style="color: #F44336; text-decoration: none;" onclick="return confirm('Удалить бренд и ВСЕ его вкусы?')">🗑️</a>
+                    <div class="brand-actions">
+                        <a href="{{ url_for('add_liquid_flavor', brand_id=brand.id) }}" style="color: #2196F3;">+ Вкус</a>
+                        <a href="{{ url_for('edit_liquid_brand', id=brand.id) }}" style="color: #FFC107;">✏️</a>
+                        <a href="{{ url_for('delete_liquid_brand', id=brand.id) }}" style="color: #F44336;" onclick="return confirm('Удалить бренд и ВСЕ его вкусы?')">🗑️</a>
                     </div>
                 </div>
 
@@ -96,19 +106,29 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #888;">Жидкости не найдены.</p>
+            <p style="color: #888;">Жидкости не найдены. Добавь первый бренд!</p>
         {% endif %}
     </div>
     {% endif %}
 
-    <!-- Остальные разделы (POD, Одноразки, Расходники) остаются почти без изменений, только добавлен цикл -->
-    <!-- Для краткости я покажу структуру, ты можешь скопировать её из предыдущего кода dashboard.html, добавив проверку filter_type -->
-
+    <!-- POD СИСТЕМЫ -->
     {% if filter_type == 'all' or filter_type == 'pods' %}
     <div class="section">
-        <h2>🔋 POD системы <a href="{{ url_for('add_pod') }}" class="add-btn">+ Добавить</a></h2>
+        <h2>
+            🔋 POD системы ({{ pods|length }})
+            <a href="{{ url_for('add_pod') }}" class="add-btn">+ Добавить</a>
+        </h2>
+        {% if pods %}
         <table>
-            <thead><tr><th>Устройство</th><th>Цвет</th><th>Наличие</th><th>Цена</th><th>Действия</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Устройство</th>
+                    <th>Цвет</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for pod in pods %}
                 <tr>
@@ -124,15 +144,101 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+            <p style="color: #888;">POD системы не найдены.</p>
+        {% endif %}
     </div>
     {% endif %}
 
-    <!-- Аналогично для disposables и consumables (скопируй блоки из старого dashboard.html и оберни в {% if filter_type == 'all' or filter_type == '...' %}) -->
+    <!-- ОДНОРАЗКИ -->
+    {% if filter_type == 'all' or filter_type == 'disposables' %}
+    <div class="section">
+        <h2>
+            🎯 Одноразки ({{ disposables|length }})
+            <a href="{{ url_for('add_disposable') }}" class="add-btn">+ Добавить</a>
+        </h2>
+        {% if disposables %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Устройство</th>
+                    <th>Вкус</th>
+                    <th>Тяги</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for disposable in disposables %}
+                <tr>
+                    <td>{{ disposable.device }}</td>
+                    <td>{{ disposable.flavor }}</td>
+                    <td>{{ disposable.puffs or '-' }}</td>
+                    <td class="{% if disposable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ disposable.quantity }} шт</td>
+                    <td>{{ disposable.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_disposable', id=disposable.id) }}">✏️</a>
+                        <a href="{{ url_for('delete_disposable', id=disposable.id) }}" onclick="return confirm('Удалить?')">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color: #888;">Одноразки не найдены.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- РАСХОДНИКИ -->
+    {% if filter_type == 'all' or filter_type == 'consumables' %}
+    <div class="section">
+        <h2>
+            ⚙️ Расходники ({{ consumables|length }})
+            <a href="{{ url_for('add_consumable') }}" class="add-btn">+ Добавить</a>
+        </h2>
+        {% if consumables %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Бренд</th>
+                    <th>Устройства</th>
+                    <th>Тип</th>
+                    <th>Сопротивление</th>
+                    <th>Наличие</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for consumable in consumables %}
+                <tr>
+                    <td>{{ consumable.brand }}</td>
+                    <td>{{ consumable.compatible_devices }}</td>
+                    <td>{{ consumable.type }}</td>
+                    <td>{{ consumable.resistance }}</td>
+                    <td class="{% if consumable.quantity > 0 %}stock-positive{% else %}stock-0{% endif %}">{{ consumable.quantity }} шт</td>
+                    <td>{{ consumable.price }} ₽</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_consumable', id=consumable.id) }}">✏️</a>
+                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" onclick="return confirm('Удалить?')">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color: #888;">Расходники не найдены.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <script>
         setTimeout(() => {
             document.querySelectorAll('.flash-message').forEach(el => {
                 el.style.opacity = '0';
+                el.style.transition = 'opacity 0.5s';
                 setTimeout(() => el.remove(), 500);
             });
         }, 3000);

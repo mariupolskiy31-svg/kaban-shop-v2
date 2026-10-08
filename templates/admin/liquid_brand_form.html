@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить бренд жидкости</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; padding: 20px; }
+        .form-container { max-width: 600px; margin: 0 auto; background: #2a2a2a; padding: 30px; border-radius: 10px; }
+        h1 { color: #D32F2F; margin-bottom: 20px; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #ccc; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 5px; background: #333; color: white; }
+        .buttons { display: flex; gap: 10px; margin-top: 20px; }
+        button, .cancel-btn { flex: 1; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; text-align: center; }
+        button { background: #4CAF50; color: white; }
+        .cancel-btn { background: #666; color: white; }
+        .hint { color: #888; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>💨 Добавить бренд жидкости</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Название бренда *</label>
+                <input type="text" name="brand" value="{{ brand.brand if brand else '' }}" required placeholder="Например: RAZEB">
+            </div>
+            <div class="form-group">
+                <label>Никотин</label>
+                <input type="text" name="nicotine" value="{{ brand.nicotine if brand else '' }}" placeholder="Например: 80mg или 5%">
+            </div>
+            <div class="form-group">
+                <label>Цена для всех вкусов этого бренда (₽) *</label>
+                <input type="number" name="price" value="{{ brand.price if brand else '' }}" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Фото бренда</label>
+                {% if brand and brand.image_url %}
+                    <img src="{{ brand.image_url }}" style="max-width: 150px; border-radius: 5px; margin-bottom: 10px;">
+                {% endif %}
+                <input type="file" name="image" accept="image/*">
+           6. Создай `templates/admin/liquid_flavor_form.html`
+
+Эта форма используется, когда нужно добавить новые вкусы к УЖЕ существующему бренду.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить вкусы</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; padding: 20px; }
+        .form-container { max-width: 600px; margin: 0 auto; background: #2a2a2a; padding: 30px; border-radius: 10px; }
+        h1 { color: #D32F2F; margin-bottom: 10px; text-align: center; }
+        .brand-info { text-align: center; color: #aaa; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #ccc; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 5px; background: #333; color: white; }
+        textarea { min-height: 120px; }
+        .buttons { display: flex; gap: 10px; margin-top: 20px; }
+        button, .cancel-btn { flex: 1; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; text-align: center; }
+        button { background: #4CAF50; color: white; }
+        .cancel-btn { background: #666; color: white; }
+        .hint { color: #888; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Добавить вкусы</h1>
+        <div class="brand-info">Для бренда: <strong>{{ brand.brand }}</strong> ({{ brand.nicotine }}, {{ brand.price }} ₽)</div>
+
+        <form method="POST">
+            <div class="form-group">
+                <label>Вкусы (каждый с новой строки) *</label>
+                <textarea name="flavors" required placeholder="Морозная фанта&#10;Арбуз&#10;Виноград"></textarea>
+                <div class="hint">Введите каждый вкус с новой строки. Количество будет применено ко всем сразу.</div>
+            </div>
+            <div class="form-group">
+                <label>Количество в наличии (шт)</label>
+                <input type="number" name="quantity" value="0" min="0">
+            </div>
+            <div class="buttons">
+                <button type="submit">💾 Добавить вкусы</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="cancel-btn">Отмена</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

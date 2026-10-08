@@ -95,7 +95,8 @@ def api_catalog():
                 'устройство': device_name,
                 'цвета': [],
                 'общее_количество': 0,
-                'цена': 0
+                'цена': 0,
+                'image_url': pd.image_url  # ← ДОБАВЛЕНО
             }
         for color in pd.colors:
             pods_data[device_name]['цвета'].append({
@@ -143,15 +144,21 @@ def api_catalog():
 def admin_dashboard():
     search = request.args.get('search', '')
     filter_type = request.args.get('filter_type', 'all')
+    brand_filter = request.args.get('brand_filter', '')  # ← НОВОЕ: фильтр по бренду
 
     # Жидкости
+    liquid_query = LiquidBrand.query
     if search:
-        liquid_brands = LiquidBrand.query.filter(
+        liquid_query = liquid_query.filter(
             (LiquidBrand.brand.ilike(f'%{search}%')) |
             (LiquidBrand.nicotine.ilike(f'%{search}%'))
-        ).all()
-    else:
-        liquid_brands = LiquidBrand.query.all()
+        )
+    if brand_filter:
+        liquid_query = liquid_query.filter(LiquidBrand.brand == brand_filter)
+    liquid_brands = liquid_query.all()
+
+    # Получаем список всех брендов для фильтра
+    all_brands = [b.brand for b in LiquidBrand.query.distinct(LiquidBrand.brand).all()]
 
     # POD устройства
     if search and filter_type in ['all', 'pods']:
@@ -194,8 +201,10 @@ def admin_dashboard():
                            pod_devices=pod_devices,
                            disposables=disposables,
                            consumables=consumables,
+                           all_brands=all_brands,
                            search=search,
                            filter_type=filter_type,
+                           brand_filter=brand_filter,
                            liquids_total=liquids_total,
                            pods_total=pods_total,
                            disposables_total=disposables_total,

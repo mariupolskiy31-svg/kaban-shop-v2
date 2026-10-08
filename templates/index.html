@@ -339,8 +339,6 @@
     <script>
         let catalog = {};
         let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        let podSpecs = {};
-        let consumableSpecs = {};
         let currentCategory = 'all';
 
         let displayedItems = {
@@ -355,9 +353,7 @@
                 const response = await fetch('/api/catalog?t=' + Date.now());
                 const result = await response.json();
 
-                // Python возвращает данные напрямую, поэтому присваиваем result целиком
                 catalog = result;
-
                 populateFilters();
                 renderCatalog();
             } catch (error) {
@@ -403,8 +399,8 @@
             const categories = [
                 {key: 'liquids', title: '💨 ЖИДКОСТИ', render: renderLiquid},
                 {key: 'pods', title: '🔋 POD СИСТЕМЫ', render: renderPod},
-                {key: 'disposables', title: ' ОДНОРАЗКИ', render: renderDisposable},
-                {key: 'consumables', title: '⚙️ РАСХОДНИКИ', render: renderConsumable}
+                {key: 'disposables', title: '🎯 ОДНОРАЗКИ', render: renderDisposable},
+                {key: 'consumables', title: '️ РАСХОДНИКИ', render: renderConsumable}
             ];
 
             categories.forEach(cat => {
@@ -474,7 +470,7 @@
                     '</div>' +
                 '</div>' +
                 '<div>' +
-                    '<button class="btn btn-info" onclick="showLiquidDetails(' + idx + ')">️ Подробнее</button>' +
+                    '<button class="btn btn-info" onclick="showLiquidDetails(' + idx + ')">ℹ️ Подробнее</button>' +
                     '<button class="btn" onclick="addToCartByIndex(\'liquids\', ' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
                 '</div>' +
             '</div>';
@@ -486,13 +482,15 @@
             const price = item.цена || '0';
             const inStock = totalQuantity > 0;
             const colors = item.цвета || [];
+            const imageUrl = item.image_url || '';
 
             const availableColors = colors.filter(c => c.количество > 0).length;
 
             return '<div class="product">' +
+                (imageUrl ? '<img src="' + imageUrl + '" class="product-image" alt="' + device + '">' : '') +
                 '<div class="product-name">' + device + '</div>' +
                 '<div class="product-stock ' + (inStock ? 'in-stock' : 'out-of-stock') + '">' +
-                    (inStock ? '✓ В наличии: ' + availableColors + ' цветов (' + totalQuantity + ' шт)' : '✗ Нет в наличии') +
+                    (inStock ? '✓ В наличии: ' + availableColors + ' цветов (' + totalQuantity + ' шт)' : ' Нет в наличии') +
                 '</div>' +
                 '<div class="product-footer">' +
                     '<div class="product-price">' + price + ' ₽</div>' +
@@ -555,7 +553,7 @@
                     '</div>' +
                 '</div>' +
                 '<div>' +
-                    '<button class="btn btn-info" onclick="showConsumableDetails(' + idx + ')">️ Подробнее</button>' +
+                    '<button class="btn btn-info" onclick="showConsumableDetails(' + idx + ')">ℹ️ Подробнее</button>' +
                     '<button class="btn" onclick="addToCartByIndex(\'consumables\', ' + idx + ')" ' + (!inStock ? 'disabled' : '') + '>🛒 В корзину</button>' +
                 '</div>' +
             '</div>';
@@ -743,11 +741,11 @@
             const content = document.getElementById('modalContent');
 
             if (cart.length === 0) {
-                content.innerHTML = '<div class="modal-title"> Корзина пуста</div>' +
+                content.innerHTML = '<div class="modal-title">🛒 Корзина пуста</div>' +
                     '<p>Добавьте товары из каталога</p>' +
                     '<button class="modal-close" onclick="closeModal()">Закрыть</button>';
             } else {
-                let html = '<div class="modal-title">🛒 Корзина (' + cart.reduce((sum, i) => sum + i.quantity, 0) + ' товаров)</div>';
+                let html = '<div class="modal-title"> Корзина (' + cart.reduce((sum, i) => sum + i.quantity, 0) + ' товаров)</div>';
 
                 let total = 0;
                 cart.forEach((item, index) => {
@@ -777,7 +775,7 @@
                             '<div style="font-size:12px;color:#cccccc">' + price + ' ₽ × ' + item.quantity + '</div>' +
                         '</div>' +
                         '<div style="font-size:16px;font-weight:bold;color:#4CAF50;margin:0 10px">' + itemTotal + ' ₽</div>' +
-                        '<button class="btn btn-danger" style="margin:0;padding:5px 10px" onclick="removeFromCart(' + index + ')">️</button>' +
+                        '<button class="btn btn-danger" style="margin:0;padding:5px 10px" onclick="removeFromCart(' + index + ')">🗑️</button>' +
                     '</div>';
                 });
 
@@ -837,6 +835,7 @@
             const item = getItem('pods', idx);
             const device = item.устройство || '';
             const colors = item.цвета || [];
+            const imageUrl = item.image_url || '';
 
             let colorsHtml = '';
             colors.forEach(color => {
@@ -852,6 +851,7 @@
             });
 
             const content = '<div class="modal-title">' + device + '</div>' +
+                (imageUrl ? '<img src="' + imageUrl + '" style="max-width:100%;border-radius:10px;margin-bottom:15px">' : '') +
                 '<h3 style="margin:10px 0">Доступные цвета:</h3>' +
                 '<p style="color:#888;font-size:12px;margin-bottom:10px">Нажмите на цвет, чтобы добавить в корзину</p>' +
                 '<div class="color-list">' + colorsHtml + '</div>' +

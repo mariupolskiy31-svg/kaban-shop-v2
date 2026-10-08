@@ -10,10 +10,12 @@
         .header { background: #D32F2F; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { font-size: 24px; }
         .header a { color: white; text-decoration: none; }
-        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
         .search-bar input, .search-bar select { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; font-size: 14px; }
         .search-bar button { padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .search-bar a { padding: 10px 15px; background: #666; color: white; border-radius: 5px; text-decoration: none; }
+        .filter-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px; background: #2a2a2a; border-radius: 8px; margin-bottom: 20px; }
+        .filter-group label { color: #aaa; font-size: 14px; }
         .section { background: #2a2a2a; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         .section h2 { color: #D32F2F; margin-bottom: 15px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .add-btn { background: #4CAF50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 14px; }
@@ -49,6 +51,7 @@
         .flash-error { background: #F44336; }
         .total-badge { background: #4CAF50; color: white; padding: 4px 10px; border-radius: 12px; font-size: 14px; font-weight: bold; }
         .empty-msg { color: #888; font-style: italic; }
+        .active-filter { background: #2196F3 !important; color: white; }
     </style>
 </head>
 <body>
@@ -78,10 +81,25 @@
             <option value="consumables" {% if filter_type == 'consumables' %}selected{% endif %}>Расходники</option>
         </select>
         <button type="submit">Найти</button>
-        {% if search or filter_type != 'all' %}
+        {% if search or filter_type != 'all' or brand_filter %}
             <a href="/admin">Сбросить</a>
         {% endif %}
     </form>
+
+    <!-- ФИЛЬТР ПО БРЕНДАМ ЖИДКОСТЕЙ -->
+    {% if all_brands %}
+    <div class="filter-group">
+        <label>🏷️ Фильтр по брендам жидкостей:</label>
+        <a href="/admin?filter_type={{ filter_type }}&search={{ search }}" class="{% if not brand_filter %}active-filter{% endif %}" style="padding: 6px 12px; border-radius: 15px; text-decoration: none; background: #444; color: white; font-size: 13px;">Все</a>
+        {% for brand in all_brands %}
+            <a href="/admin?filter_type={{ filter_type }}&search={{ search }}&brand_filter={{ brand }}"
+               class="{% if brand_filter == brand %}active-filter{% endif %}"
+               style="padding: 6px 12px; border-radius: 15px; text-decoration: none; background: #444; color: white; font-size: 13px;">
+                {{ brand }}
+            </a>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <!-- ЖИДКОСТИ -->
     {% if filter_type == 'all' or filter_type == 'liquids' %}
@@ -111,7 +129,6 @@
                     <div class="flavor-item">
                         <span class="flavor-name">{{ flavor.flavor }}</span>
                         <div class="flavor-controls">
-                            <!-- Inline редактирование количества -->
                             <form method="POST" action="{{ url_for('edit_liquid_flavor', id=flavor.id) }}" class="qty-form" style="display: flex; gap: 5px; align-items: center;">
                                 <input type="hidden" name="flavor" value="{{ flavor.flavor }}">
                                 <input type="number" name="quantity" value="{{ flavor.quantity }}" min="0" class="qty-input" title="Количество">
@@ -153,7 +170,7 @@
                     <div class="brand-actions">
                         <a href="{{ url_for('add_pod_color', device_id=device.id) }}" style="color: #2196F3;">+ Цвет</a>
                         <a href="{{ url_for('edit_pod_device', id=device.id) }}" style="color: #FFC107;">✏️ Устройство</a>
-                        <a href="{{ url_for('delete_pod_device', id=device.id) }}" style="color: #F44336;" onclick="return confirm('Удалить устройство и ВСЕ его цвета?')">🗑️</a>
+                        <a href="{{ url_for('delete_pod_device', id=device.id) }}" style="color: #F44336;" onclick="return confirm('Удалить устройство и ВСЕ его цвета?')">️</a>
                     </div>
                 </div>
 
@@ -162,7 +179,6 @@
                     <div class="flavor-item">
                         <span class="flavor-name">{{ color.color }}</span>
                         <div class="flavor-controls">
-                            <!-- Inline редактирование количества и цены -->
                             <form method="POST" action="{{ url_for('edit_pod_color', id=color.id) }}" class="qty-form" style="display: flex; gap: 5px; align-items: center;">
                                 <input type="hidden" name="color" value="{{ color.color }}">
                                 <input type="number" name="quantity" value="{{ color.quantity }}" min="0" class="qty-input" title="Количество" style="width: 60px;">
@@ -191,7 +207,7 @@
     {% if filter_type == 'all' or filter_type == 'disposables' %}
     <div class="section">
         <h2>
-            <span>🎯 Одноразки ({{ disposables|length }}) <span class="total-badge">{{ disposables_total }} ₽</span></span>
+            <span> Одноразки ({{ disposables|length }}) <span class="total-badge">{{ disposables_total }} ₽</span></span>
             <a href="{{ url_for('add_disposable') }}" class="add-btn">+ Добавить</a>
         </h2>
         {% if disposables %}
@@ -278,7 +294,7 @@
                     <td>{{ consumable.price }} ₽</td>
                     <td class="actions">
                         <a href="{{ url_for('edit_consumable', id=consumable.id) }}">✏️</a>
-                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" onclick="return confirm('Удалить?')">️</a>
+                        <a href="{{ url_for('delete_consumable', id=consumable.id) }}" onclick="return confirm('Удалить?')">🗑️</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -291,7 +307,6 @@
     {% endif %}
 
     <script>
-        // Авто-скрытие уведомлений через 3 секунды
         setTimeout(() => {
             document.querySelectorAll('.flash-message').forEach(el => {
                 el.style.opacity = '0';

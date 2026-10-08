@@ -1,5 +1,4 @@
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -14,7 +13,6 @@ class LiquidBrand(db.Model):
     image_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Связь с вкусами
     flavors = db.relationship('LiquidFlavor', backref='brand_group', lazy=True, cascade='all, delete-orphan')
 
 

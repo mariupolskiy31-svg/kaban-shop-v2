@@ -7,16 +7,22 @@ from database import db, init_db, LiquidBrand, LiquidFlavor, Pod, Disposable, Co
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key')
 
-# Настройка БД
+# ===== НАСТРОЙКА БД =====
 database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
 if database_url:
+    # Явно указываем драйвер psycopg2
     if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        database_url = database_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+    elif database_url.startswith('postgresql://'):
+        database_url = database_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+
+    # Добавляем SSL для PostgreSQL
     if 'sslmode' not in database_url:
         if '?' in database_url:
             database_url += '&sslmode=require'
         else:
             database_url += '?sslmode=require'
+
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -30,7 +36,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 init_db(app)
 
 
-# ===== ФУНКЦИЯ ЗАГРУЗКИ ФОТО НА IMGBB =====
+# ===== ЗАГРУЗКА ФОТО НА IMGBB =====
 def upload_to_imgbb(file):
     """Загрузка фото на ImgBB"""
     api_key = os.environ.get('IMGBB_API_KEY')
@@ -70,7 +76,7 @@ def index():
 
 @app.route('/api/catalog')
 def api_catalog():
-    # Получаем все жидкости с группировкой
+    # Получаем жидкости с группировкой по брендам
     liquid_brands = LiquidBrand.query.all()
     liquids = []
     for lb in liquid_brands:
@@ -85,11 +91,8 @@ def api_catalog():
                 'image_url': lb.image_url
             })
 
+    # POD системы
     pods = Pod.query.all()
-    disposables = Disposable.query.all()
-    consumables = Consumable.query.all()
-
-    # Группируем PODы
     pods_data = {}
     for pod in pods:
         if pod.device not in pods_data:
@@ -104,6 +107,12 @@ def api_catalog():
             'количество': pod.quantity
         })
         pods_data[pod.device]['общее_количество'] += pod.quantity
+
+    # Одноразки
+    disposables = Disposable.query.all()
+
+    # Расходники
+    consumables = Consumable.query.all()
 
     data = {
         'liquids': liquids,
@@ -136,41 +145,50 @@ def api_catalog():
 
 @app.route('/admin')
 def admin_dashboard():
-    # Получаем параметры поиска и фильтрации
     search = request.args.get('search', '')
     filter_type = request.args.get('filter_type', 'all')
 
     # Жидкости
-    liquid_brands = LiquidBrand.query.all()
     if search:
         liquid_brands = LiquidBrand.query.filter(
             (LiquidBrand.brand.ilike(f'%{search}%')) |
             (LiquidBrand.nicotine.ilike(f'%{search}%'))
         ).all()
+    else:
+        liquid_brands = LiquidBrand.query.all()
 
     # PODs
-    pods = Pod.query.all()
     if search and filter_type in ['all', 'pods']:
         pods = Pod.query.filter(
             (Pod.device.ilike(f'%{search}%')) |
             (Pod.color.ilike(f'%{search}%'))
         ).all()
+    elif filter_type == 'pods':
+        pods = Pod.query.all()
+    else:
+        pods = []
 
     # Одноразки
-    disposables = Disposable.query.all()
     if search and filter_type in ['all', 'disposables']:
         disposables = Disposable.query.filter(
             (Disposable.device.ilike(f'%{search}%')) |
             (Disposable.flavor.ilike(f'%{search}%'))
         ).all()
+    elif filter_type == 'disposables':
+        disposables = Disposable.query.all()
+    else:
+        disposables = []
 
     # Расходники
-    consumables = Consumable.query.all()
     if search and filter_type in ['all', 'consumables']:
         consumables = Consumable.query.filter(
             (Consumable.brand.ilike(f'%{search}%')) |
             (Consumable.compatible_devices.ilike(f'%{search}%'))
         ).all()
+    elif filter_type == 'consumables':
+        consumables = Consumable.query.all()
+    else:
+        consumables = []
 
     return render_template('admin/dashboard.html',
                            liquid_brands=liquid_brands,
@@ -181,11 +199,10 @@ def admin_dashboard():
                            filter_type=filter_type)
 
 
-# ===== ЖИДКОСТИ (НОВАЯ СТРУКТУРА) =====
+# ===== ЖИДКОСТИ =====
 
 @app.route('/admin/liquid-brand/add', methods=['GET', 'POST'])
 def add_liquid_brand():
-    """Добавить бренд жидкости (группу)"""
     if request.method == 'POST':
         image_url = None
         if 'image' in request.files:
@@ -204,19 +221,21 @@ def add_liquid_brand():
         db.session.add(brand)
         db.session.commit()
 
-        # Добавляем первый вкус
+        # Добавляем вкусы
         flavors_text = request.form.get('flavors', '')
+        quantity = int(request.form.get('quantity', 0))
+
         for flavor_name in flavors_text.split('\n'):
             flavor_name = flavor_name.strip()
             if flavor_name:
                 flavor = LiquidFlavor(
                     brand_group_id=brand.id,
                     flavor=flavor_name,
-                    quantity=int(request.form.get('quantity', 0))
+                    quantity=quantity
                 )
                 db.session.add(flavor)
-        db.session.commit()
 
+        db.session.commit()
         flash('Бренд и вкусы добавлены', 'success')
         return redirect(url_for('admin_dashboard'))
 
@@ -225,7 +244,6 @@ def add_liquid_brand():
 
 @app.route('/admin/liquid-brand/edit/<int:id>', methods=['GET', 'POST'])
 def edit_liquid_brand(id):
-    """Редактировать бренд жидкости"""
     brand = LiquidBrand.query.get_or_404(id)
 
     if request.method == 'POST':
@@ -249,7 +267,6 @@ def edit_liquid_brand(id):
 
 @app.route('/admin/liquid-flavor/add/<int:brand_id>', methods=['GET', 'POST'])
 def add_liquid_flavor(brand_id):
-    """Добавить вкус к существующему бренду"""
     brand = LiquidBrand.query.get_or_404(brand_id)
 
     if request.method == 'POST':
@@ -275,9 +292,7 @@ def add_liquid_flavor(brand_id):
 
 @app.route('/admin/liquid-flavor/delete/<int:id>')
 def delete_liquid_flavor(id):
-    """Удалить вкус"""
     flavor = LiquidFlavor.query.get_or_404(id)
-    brand_id = flavor.brand_group_id
     db.session.delete(flavor)
     db.session.commit()
     flash('Вкус удалён', 'success')
@@ -286,7 +301,6 @@ def delete_liquid_flavor(id):
 
 @app.route('/admin/liquid-brand/delete/<int:id>')
 def delete_liquid_brand(id):
-    """Удалить бренд и все его вкусы"""
     brand = LiquidBrand.query.get_or_404(id)
     db.session.delete(brand)
     db.session.commit()
